@@ -72,13 +72,13 @@ for t= 1:(timeSteps-1)                   %Change in Time
        %Convection Slab
        Q = massAir*cpAir*(Ta(x+1,t+1)-Ta(x,t))*dt ;
        if(x < nodeNum)
-       Ts(x,t+1)= Ts(x,t+1) + Ts(x,t)-(massAir*cpAir*dt*(Ta(x+1,t+1)-Ta(x,t)))/(nodeMass*cpSlab);
+       Ts(x,t+1)= Ts(x,t)-(massAir*cpAir*dt*(Ta(x+1,t+1)-Ta(x,t)))/(nodeMass*cpSlab);
 
        %conduction not working rn
 %        Ts(x,t+1) = Ts(x,t+1) - (kSlab*condArea*(Ts(x+1,t)-Ts(x,t))*dt/dx)/(nodeMass*cpSlab);
 % Qi = kSlab*condArea*(Ts(x+1,t)-Ts(x,t))*dt/dx;
 %        Ts(x+1,t+1) = Ts(x+1,t+1) - (kSlab*condArea*(Ts(x+1,t)-Ts(x,t))*dt/dx)/(nodeMass*cpSlab);
-%        Ts(x+1,t+1) = Ts(x,t+1) + (massAir*cpAir*(Ta(x+1,t+1)-Ta(x,t))*dt*dx)/(dt*kSlab*condArea)+ Ts(x,t);
+       Ts(x+1,t+1) = Ts(x,t+1) + (massAir*cpAir*(Ta(x+1,t+1)-Ta(x,t))*dt*dx)/(dt*kSlab*condArea)+ Ts(x,t);
 
        end
        
