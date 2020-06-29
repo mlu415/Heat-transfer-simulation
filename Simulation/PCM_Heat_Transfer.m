@@ -1,11 +1,11 @@
-clear 
+clear
 
 %--------------------------------------------------------------------------------------------------
 % Simulation parameters
-simTime=1000;                                 % Max simulation time
-timeSteps = 10000;                            % Number of Time steps
+simTime=100;                                 % Max simulation time
+timeSteps = 1000000;                            % Number of Time steps
 dt = simTime/timeSteps;                     % Time step
-nodeNum = 50;                               % Number of nodes to break bar into                                 
+nodeNum = 500;                               % Number of nodes to break bar into
 time = linspace(0,simTime,timeSteps);       % Array of time steps
 
 %--------------------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ nodeVol = dx*dy*dz;                         % Node volume
 
 % Slab parameters
 densitySlab=2700;                           % Density of slab
-kSlab=205;                                  % Slab conductivity
+kSlab=0.205;                                  % Slab conductivity
 cpSlab = 0.9;                               % Specific heat capacity kj/kgK
 nodeMass = nodeVol*densitySlab;             % Node Mass
 alpha=kSlab/(densitySlab*cpSlab);           % Thermal Diffusivity
@@ -52,7 +52,7 @@ massAir=VolumetricFlowrate*pAir;                 % Mass Flow rate of air
 %--------------------------------------------------------------------------------------------------
 %row is distance where row 1 is at x=0, row 2 x=dx
 %column is time where column 1 is time=0, column 2 is time =dt
-%        Ta(x,t)=Ta(x-1,t)+(Ts(x,t)-Ta(x-1,t))*h*area*dx/(Ma*cpair); % Air temperature profile  
+%        Ta(x,t)=Ta(x-1,t)+(Ts(x,t)-Ta(x-1,t))*h*area*dx/(Ma*cpair); % Air temperature profile
 
 % Conduction
 
@@ -62,31 +62,33 @@ airItr = 0;
 for t= 1:(timeSteps-1)                   %Change in Time
     airItr = airItr +1;
     for x = 1:nodeNum                         %Change in distance
-       
-%        %Convection
-%        if (airItr >= airSkips)
-%        Ta(x,t+1)=Ta(x,t)+(Ts(x,t)-Ta(x,t))*h*convArea*dx/(massAir*cpAir); % Air temperature profile
-%        else
+        
+        %        %Convection
+        %        if (airItr >= airSkips)
+        %        Ta(x,t+1)=Ta(x,t)+(Ts(x,t)-Ta(x,t))*h*convArea*dx/(massAir*cpAir); % Air temperature profile
+        %        else
+        
         Ta(x+1,t+1)=Ta(x,t)+(Ts(x,t)-Ta(x,t))*h*convArea*dx/(massAir*cpAir); % Air temperature profile
-%        end
-       %Convection Slab
-       Q = massAir*cpAir*(Ta(x+1,t+1)-Ta(x,t))*dt ;
-       if(x < nodeNum)
-       Ts(x,t+1)= Ts(x,t+1) + Ts(x,t)-(massAir*cpAir*dt*(Ta(x+1,t+1)-Ta(x,t)))/(nodeMass*cpSlab);
-
-       %conduction not working rn
-%        Ts(x,t+1) = Ts(x,t+1) - (kSlab*condArea*(Ts(x+1,t)-Ts(x,t))*dt/dx)/(nodeMass*cpSlab);
-% Qi = kSlab*condArea*(Ts(x+1,t)-Ts(x,t))*dt/dx;
-%        Ts(x+1,t+1) = Ts(x+1,t+1) - (kSlab*condArea*(Ts(x+1,t)-Ts(x,t))*dt/dx)/(nodeMass*cpSlab);
-%        Ts(x+1,t+1) = Ts(x,t+1) + (massAir*cpAir*(Ta(x+1,t+1)-Ta(x,t))*dt*dx)/(dt*kSlab*condArea)+ Ts(x,t);
-
-       end
-       
+        %Convection Slab
+        Ts(x,t+1)= Ts(x,t)-(massAir*cpAir*dt*(Ta(x+1,t+1)-Ta(x,t)))/(nodeMass*cpSlab);
+        
+        %conduction not working rn
+        if(x == 1)
+            Ts(x,t+1) = Ts(x,t+1) + (kSlab/(densitySlab*cpSlab))*((Ts(x+1,t)-Ts(x,t))/dx)*dt;
+        elseif(x == nodeNum)
+            Ts(x,t+1) = Ts(x,t+1)+ (kSlab/(densitySlab*cpSlab))*((-Ts(x,t)+Ts(x-1,t))/dx)*dt;
+        else
+            kSlab/(densitySlab*cpSlab)*((Ts(x+1,t)-2*Ts(x,t)+Ts(x-1,t))/(dx^2))*dt;
+            Ts(x,t+1) = Ts(x,t+1)+ (kSlab/(densitySlab*cpSlab))*((Ts(x+1,t)-2*Ts(x,t)+Ts(x-1,t))/(dx^2))*dt;
+        end
     end
-%     if (airItr >= airSkips)
-%         airItr = 0;
-%     end
+    
+    
+    %     if (airItr >= airSkips)
+    %         airItr = 0;
+    %     end
 end
+    disp("Done");
 
 
 
