@@ -2,26 +2,22 @@ clear
 
 %--------------------------------------------------------------------------------------------------
 % Simulation parameters
-simTime=2;                                 % Max simulation time
-timeSteps = 100000000;                            % Number of Time steps
-dt = simTime/timeSteps;                     % Time step
+
 
 nodeNumx = 10;                               % Number of nodes to break bar into
 nodeNumy = 10;
-time = linspace(0,simTime,timeSteps);       % Array of time steps
 
 %--------------------------------------------------------------------------------------------------
 %SlabParameters
 % Slab Diementions
-L = 0.01;                                   % Length of slab
-Thicc = 0.0001;
+L = 0.43;                                   % Length of slab
+Thicc = 0.01;
 dx = L/nodeNumx;                            % length of each node
 dy = Thicc/nodeNumy;                                % Thickness of slab
 dz = 0.28;                                  % Width of slab
 convArea = dx*dz;                           % Area for convection
 condArea = dx*dy;                           % Area for conduction
 nodeVol = dx*dy*dz;                         % Node volume
-
 
 % Slab parameters
 densitySlab=2700;                           % Density of slab
@@ -31,6 +27,14 @@ nodeMass = nodeVol*densitySlab;             % Node Mass
 alpha=kSlab/(densitySlab*cpSlab);           % Thermal Diffusivity
 initialSlabTemp=2;                          % Initial Slab temperature
 
+%-----------------------------------------------------------------------------------------------------
+%Recording and Simulation
+
+simTime=0.5*60;                                 % Max simulation time
+dt = min(0.5*dx^2/alpha, 0.5*dy^2/alpha);
+timeSteps = round(simTime/dt);                            % Number of Time steps
+fps = 10;
+timeStepSkips = round((timeSteps/simTime)/fps);
 
 % Intialise Slab Array
 Ts= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
@@ -58,11 +62,16 @@ massAir=VolumetricFlowrate*pAir;                 % Mass Flow rate of air
 
 % Conduction
 
-dtmin= min(0.5*dx^2/alpha, 0.5*dy^2/alpha)
+count = 0;
+
+dtmin= min((0.5*dx^2)/alpha, (0.5*dy^2)/alpha)
 
 airSkips = (dx/dt)/Velocity;
 airItr = 0;
-
+aviobj = VideoWriter('example.avi');
+aviobj.FrameRate = fps;
+open(aviobj);
+colormap parula
 for t= 1:(timeSteps-1)                   %Change in Time
     airItr = airItr +1;
     for y = 1:nodeNumy
@@ -95,29 +104,19 @@ for t= 1:(timeSteps-1)                   %Change in Time
             
         end
     end
-    contourf(Ts(:,:,1));
-    colorbar()
-    caxis([2, 20]);
-    drawnow;
-    %     if (airItr >= airSkips)
-    %         airItr = 0;
-    %     end
+    if(mod(t,timeStepSkips)==0)
+        contourf(Ts(:,:,1));
+        colorbar()
+        caxis([2, 20]);
+        drawnow;
+        F = getframe(gcf);
+        writeVideo(aviobj,F);
+        disp(100*t/timeSteps);
+    end
 end
-% TsF(:,1,:) = Ts(:,:);
-% TsF(:,2,:) = Ts(:,:);
- colormap parula
-% 
-% aviobj = VideoWriter('example.avi');
-% open(aviobj);
-% for t = 1:(timeSteps):50
-%     contourf(Ts(:,:,t));
-%     colorbar()
-%     drawnow;
-% %     F = getframe(gcf);
-% %     writeVideo(aviobj,F);
-% end
 
-% aviobj = close(aviobj);
+
+close(aviobj);
 
 disp("Done");
 
