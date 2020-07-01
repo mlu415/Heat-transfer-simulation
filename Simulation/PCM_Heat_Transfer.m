@@ -33,14 +33,14 @@ initialSlabTemp=2;                          % Initial Slab temperature
 
 
 % Intialise Slab Array
-Ts= zeros(nodeNumx,nodeNumy,timeSteps);               % Making empty matrix for slab to store values
-Ts(:,:,1)= initialSlabTemp;                      % Setting initial slab temperature assuming uniform
+Ts= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
+Ts(:,:,:)= initialSlabTemp;                      % Setting initial slab temperature assuming uniform
 
 %--------------------------------------------------------------------------------------------------
 %AirParameters
 InletAtemp=20;                              % Constant inlet air temperature degrees Celcius
 h=17.2;                                     % Convective heat transfer coefficient
-Ta= zeros(nodeNumx,timeSteps);               % Making empty matrix for air temperature to store values.
+Ta= zeros(nodeNumx,2);               % Making empty matrix for air temperature to store values.
 Ta(1,:)= InletAtemp;                        % Setting air temperature at x=
 Ta(:,1)= initialSlabTemp;                        % Setting air temperature at x=0
 
@@ -73,28 +73,32 @@ for t= 1:(timeSteps-1)                   %Change in Time
             %        else
             
 %             Setting up next time step
-            Ts(x,y,t+1)= Ts(x,y,t);
-            
+            Ts(:,:,1)= Ts(:,:,2);
+            Ta(:,1) = Ta(:,2);
             if(x == 1)
-                Ts(x,y,t+1) = Ts(x,y,t+1) + (alpha)*((Ts(x+1,y,t)-Ts(x,y,t))/dx)*dt;
+                Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x+1,y,1)-Ts(x,y,1))/dx)*dt;
             elseif(x == nodeNumx)
-                Ts(x,y,t+1) = Ts(x,y,t+1)+ (alpha)*((-Ts(x,y,t)+Ts(x-1,y,t))/dx)*dt;
+                Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((-Ts(x,y,1)+Ts(x-1,y,1))/dx)*dt;
             else
-                Ts(x,y,t+1) = Ts(x,y,t+1)+ (alpha)*((Ts(x+1,y,t)-2*Ts(x,y,t)+Ts(x-1,y,t))/(dx^2))*dt;
+                Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((Ts(x+1,y,1)-2*Ts(x,y,1)+Ts(x-1,y,1))/(dx^2))*dt;
             end
             if(y==1)
-                Ta(x+1,t+1)=Ta(x,t)+(Ts(x,y,t)-Ta(x,t))*h*convArea*2/(massAir*cpAir*1000); % Air temperature profile
+                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*convArea*2/(massAir*cpAir*1000); % Air temperature profile
                 %Convection Slab
-                Ts(x,y,t+1)= Ts(x,y,t+1)-(massAir*cpAir*dt*(Ta(x+1,t+1)-Ta(x,t)))/(nodeMass*cpSlab);
-                Ts(x,y,t+1) = Ts(x,y,t+1) + (alpha)*((Ts(x,y+1,t)-Ts(x,y,t))/dy)*dt;
+                Ts(x,y,2)= Ts(x,y,2)-(massAir*cpAir*dt*(Ta(x+1,2)-Ta(x,1)))/(nodeMass*cpSlab);
+                Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y+1,1)-Ts(x,y,1))/dy)*dt;
             elseif(y == nodeNumy)
-                Ts(x,y,t+1) = Ts(x,y,t+1) + (alpha)*((Ts(x,y-1,t)-Ts(x,y,t))/dy)*dt;
+                Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y-1,1)-Ts(x,y,1))/dy)*dt;
             else
-                Ts(x,y,t+1) = Ts(x,y,t+1)+ (alpha)*((Ts(x,y+1,t)-2*Ts(x,y,t)+Ts(x,y-1,t))/(dy^2))*dt;
+                Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((Ts(x,y+1,1)-2*Ts(x,y,1)+Ts(x,y-1,1))/(dy^2))*dt;
             end
+            
         end
     end
-    
+    contourf(Ts(:,:,1));
+    colorbar()
+    caxis([2, 20]);
+    drawnow;
     %     if (airItr >= airSkips)
     %         airItr = 0;
     %     end
@@ -105,13 +109,13 @@ end
 % 
 % aviobj = VideoWriter('example.avi');
 % open(aviobj);
-for t = 1:(timeSteps):50
-    contourf(Ts(:,:,t));
-    colorbar()
-    drawnow;
-%     F = getframe(gcf);
-%     writeVideo(aviobj,F);
-end
+% for t = 1:(timeSteps):50
+%     contourf(Ts(:,:,t));
+%     colorbar()
+%     drawnow;
+% %     F = getframe(gcf);
+% %     writeVideo(aviobj,F);
+% end
 
 % aviobj = close(aviobj);
 
