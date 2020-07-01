@@ -3,10 +3,11 @@ clear
 %--------------------------------------------------------------------------------------------------
 % Simulation parameters
 simTime=2;                                 % Max simulation time
-timeSteps = 10000;                            % Number of Time steps
+timeSteps = 100000000;                            % Number of Time steps
 dt = simTime/timeSteps;                     % Time step
-nodeNumx = 5;                               % Number of nodes to break bar into
-nodeNumy = 5;
+
+nodeNumx = 10;                               % Number of nodes to break bar into
+nodeNumy = 10;
 time = linspace(0,simTime,timeSteps);       % Array of time steps
 
 %--------------------------------------------------------------------------------------------------
@@ -17,7 +18,6 @@ Thicc = 0.0001;
 dx = L/nodeNumx;                            % length of each node
 dy = Thicc/nodeNumy;                                % Thickness of slab
 dz = 0.28;                                  % Width of slab
-length=linspace(0,L,1/dx);                  % Array of node positions
 convArea = dx*dz;                           % Area for convection
 condArea = dx*dy;                           % Area for conduction
 nodeVol = dx*dy*dz;                         % Node volume
@@ -58,6 +58,8 @@ massAir=VolumetricFlowrate*pAir;                 % Mass Flow rate of air
 
 % Conduction
 
+dtmin= min(0.5*dx^2/alpha, 0.5*dy^2/alpha)
+
 airSkips = (dx/dt)/Velocity;
 airItr = 0;
 
@@ -74,21 +76,21 @@ for t= 1:(timeSteps-1)                   %Change in Time
             Ts(x,y,t+1)= Ts(x,y,t);
             
             if(x == 1)
-                Ts(x,y,t+1) = Ts(x,y,t+1) + (kSlab/(densitySlab*cpSlab))*((Ts(x+1,y,t)-Ts(x,y,t))/dx)*dt;
+                Ts(x,y,t+1) = Ts(x,y,t+1) + (alpha)*((Ts(x+1,y,t)-Ts(x,y,t))/dx)*dt;
             elseif(x == nodeNumx)
-                Ts(x,y,t+1) = Ts(x,y,t+1)+ (kSlab/(densitySlab*cpSlab))*((-Ts(x,y,t)+Ts(x-1,y,t))/dx)*dt;
+                Ts(x,y,t+1) = Ts(x,y,t+1)+ (alpha)*((-Ts(x,y,t)+Ts(x-1,y,t))/dx)*dt;
             else
-                Ts(x,y,t+1) = Ts(x,y,t+1)+ (kSlab/(densitySlab*cpSlab))*((Ts(x+1,y,t)-2*Ts(x,y,t)+Ts(x-1,y,t))/(dx^2))*dt;
+                Ts(x,y,t+1) = Ts(x,y,t+1)+ (alpha)*((Ts(x+1,y,t)-2*Ts(x,y,t)+Ts(x-1,y,t))/(dx^2))*dt;
             end
             if(y==1)
                 Ta(x+1,t+1)=Ta(x,t)+(Ts(x,y,t)-Ta(x,t))*h*convArea*2/(massAir*cpAir*1000); % Air temperature profile
                 %Convection Slab
                 Ts(x,y,t+1)= Ts(x,y,t+1)-(massAir*cpAir*dt*(Ta(x+1,t+1)-Ta(x,t)))/(nodeMass*cpSlab);
-                Ts(x,y,t+1) = Ts(x,y,t+1) + (kSlab/(densitySlab*cpSlab))*((Ts(x,y+1,t)-Ts(x,y,t))/dy)*dt;
+                Ts(x,y,t+1) = Ts(x,y,t+1) + (alpha)*((Ts(x,y+1,t)-Ts(x,y,t))/dy)*dt;
             elseif(y == nodeNumy)
-                Ts(x,y,t+1) = Ts(x,y,t+1) + (kSlab/(densitySlab*cpSlab))*((Ts(x,y-1,t)-Ts(x,y,t))/dy)*dt;
+                Ts(x,y,t+1) = Ts(x,y,t+1) + (alpha)*((Ts(x,y-1,t)-Ts(x,y,t))/dy)*dt;
             else
-                Ts(x,y,t+1) = Ts(x,y,t+1)+ (kSlab/(densitySlab*cpSlab))*((Ts(x,y+1,t)-2*Ts(x,y,t)+Ts(x,y-1,t))/(dy^2))*dt;
+                Ts(x,y,t+1) = Ts(x,y,t+1)+ (alpha)*((Ts(x,y+1,t)-2*Ts(x,y,t)+Ts(x,y-1,t))/(dy^2))*dt;
             end
         end
     end
@@ -103,9 +105,10 @@ end
 % 
 % aviobj = VideoWriter('example.avi');
 % open(aviobj);
-for t = 1:(timeSteps-1)
-%     surf(Ts(:,:,t));
-%     drawnow;
+for t = 1:(timeSteps):50
+    contourf(Ts(:,:,t));
+    colorbar()
+    drawnow;
 %     F = getframe(gcf);
 %     writeVideo(aviobj,F);
 end
