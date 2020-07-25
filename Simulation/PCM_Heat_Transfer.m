@@ -71,13 +71,20 @@ dtmin= min((0.5*dx^2)/alpha, (0.5*dy^2)/alpha);
 % water parameters
 Transition_temp = 0;
 Transition_range = 2;
+
 cp_liquid = 4.18; %KJ/KgK
 cp_solid = 2.04; %KJ/KgK
-cp_transition =	334; % J/g
- initialPCMTemp = -4;
-% kPCM = 
-% densityPCM = 
-% kSlab/(densitySlab*cpSlab)
+cp_transition =	334; % KJ/Kg
+densitySolid = 900; % Kg/m3
+densityLiquid = 1000; % Kg/m3
+initialPCMTemp = -4;
+kPCM = 1.6;
+
+cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
+
+liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
+densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
 
 % Intialise PCM Array
 Tp= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
