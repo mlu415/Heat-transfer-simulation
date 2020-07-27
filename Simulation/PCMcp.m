@@ -12,7 +12,7 @@ elseif T >= (Transition_temp + Transition_range/2)
     cp = cp_liquid;
 % If the PCM is in mushy region
 else
-    % Ramp functions using line equations
+    % Ramp functions using line equations (interpolation)
     if T <= Transition_temp
         cp = cp_solid + (T-(Transition_temp-Transition_range/2))*(cp_transition - cp_solid)/(Transition_range/2);
     else
