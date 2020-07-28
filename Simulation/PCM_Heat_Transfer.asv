@@ -14,7 +14,7 @@ L = 0.43;                                   % Length of slab
 Thicc = 0.01;
 dx = L/nodeNumx;                            % length of each node
 dy = Thicc/nodeNumy;                        % Thickness of slab node
-dz = 0.28;                                  % Width of slab node
+dz = 0.27;                                  % Width of slab node
 convArea = dx*dz;                           % Area for convection
 condArea = dx*dy;                           % Area for conduction
 nodeVol = dx*dy*dz;                         % Node volume
@@ -27,6 +27,7 @@ nodeMass = nodeVol*densitySlab;             % Node Mass
 alpha=kSlab/(densitySlab*cpSlab);           % Thermal Diffusivity
 initialSlabTemp=2;                          % Initial Slab temperature
 
+
 %-----------------------------------------------------------------------------------------------------
 %Recording and Simulation
 
@@ -36,10 +37,12 @@ timeSteps = round(simTime/dt);                            % Number of Time steps
 fps = 10;
 timeStepSkips = round((timeSteps/simTime)/fps);
 
+Stabilitycheckdx= alpha*dt/dx^2;
+Stabilitycheckdy= alpha*dt/dy^2;
+
 % Intialise Slab Array
 Ts= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
 Ts(:,:,:)= initialSlabTemp;                      % Setting initial slab temperature assuming uniform
-
 %--------------------------------------------------------------------------------------------------
 %AirParameters
 InletAtemp=20;                              % Constant inlet air temperature degrees Celcius
@@ -80,15 +83,16 @@ densityLiquid = 1000; % Kg/m3
 initialPCMTemp = -4;
 kPCM = 1.6;
 
-cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
-H = cpCurrent*
-
-liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
-densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
-
 % Intialise PCM Array
 Tp= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
 Tp(:,:,:)= initialPCMTemp;                      % Setting initial slab temperature assuming uniform
+
+cpCurrent = PCMcp(Tp,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
+
+liqFraction = LiquidFraction(H,cp_solid,Transition_temp, cp_transition);
+densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
+
 
 
 
