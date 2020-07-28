@@ -99,12 +99,17 @@ Transition_range = 2;
 
 cp_liquid = 4.18; %KJ/KgK
 cp_solid = 2.04; %KJ/KgK
-cp_transition =	334; % KJ/Kg
+q =	334; % KJ/Kg
 densitySolid = 900; % Kg/m3
 densityLiquid = 1000; % Kg/m3
 initialPCMTemp = -4;
-kPCMliq = 1.6;
-kPCMsolid=0.6;
+kPCM = 1.6;
+
+cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
+
+liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
+densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
 
 % Intialise PCM Array
 Tp= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
@@ -172,12 +177,12 @@ for t= 1:(timeSteps-1)                   %Change in Time
             % Boundary conditions for slab edge adjacent to air
             if(y==1)
                 % Air temperature profile
-                Ta(x+1,2)=Ta(x,1)+(Tp(x,y,1)-Ta(x,1))*h*convArea*2/(massAir*cpAir*1000);
-                % PCM Convection
-                Tp(x,y,2)= Tp(x,y,2)-(massAir*cpAir*dt*(Ta(x+1,2)-Ta(x,1)))/(nodeMass*cpSlab);
-                % PCM Conduction
-                Tp(x,y,2) = Tp(x,y,2) + (alpha)*((Tp(x,y+1,1)-Tp(x,y,1))/dy)*dt;
-                % Boundry conditions for slab edge adjacent to PCM
+                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*convArea*2/(massAir*cpAir*1000); 
+                % Slab Convection
+                Ts(x,y,2)= Ts(x,y,2)-(massAir*cpAir*dt*(Ta(x+1,2)-Ta(x,1)))/(nodeMass*cpSlab);
+                % Slab Conduction
+                Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y+1,1)-Ts(x,y,1))/dy)*dt;
+            % Boundry conditions for slab edge adjacent to PCM
             elseif(y == nodeNumy)
                 % PCM Conduction
                 Tp(x,y,2) = Tp(x,y,2) + (alpha)*((Tp(x,y-1,1)-Tp(x,y,1))/dy)*dt;
