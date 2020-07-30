@@ -4,19 +4,17 @@ clear
 % Simulation parameters
 
 
-nodeNumx = 10;                               % Number of nodes to break bar into
-nodeNumy = 10;
+slabNumx = 10;                               % Number of nodes to break bar into
+slabNumy = 10;
 
 %--------------------------------------------------------------------------------------------------
 %SlabParameters
 % Slab Diementions
 L = 0.43;                                   % Length of slab
 Thicc = 0.01;
-dx = L/nodeNumx;                            % length of each node
-dy = Thicc/nodeNumy;                        % Thickness of slab node
-dz = 0.27;                                  % Width of slab node
-convArea = dx*dz;                           % Area for convection
-condArea = dx*dy;                           % Area for conduction
+dx = L/slabNumx;                            % length of each node
+dy = Thicc/slabNumy;                        % Thickness of slab node
+dz = 0.28;                                  % Width of slab node
 nodeVol = dx*dy*dz;                         % Node volume
 
 % Slab parameters
@@ -27,27 +25,24 @@ nodeMass = nodeVol*densitySlab;             % Node Mass
 alpha=kSlab/(densitySlab*cpSlab);           % Thermal Diffusivity
 initialSlabTemp=2;                          % Initial Slab temperature
 
-
 %-----------------------------------------------------------------------------------------------------
 %Recording and Simulation
 
 simTime=0.5*60;                                 % Max simulation time
-dt = min(0.5*dx^2/alpha, 0.5*dy^2/alpha);
+dt = min(0.5*dx^2/alpha, 0.5*dy^2/alpha)/10;
 timeSteps = round(simTime/dt);                            % Number of Time steps
 fps = 10;
 timeStepSkips = round((timeSteps/simTime)/fps);
 
-Stabilitycheckdx= alpha*dt/dx^2;
-Stabilitycheckdy= alpha*dt/dy^2;
-
 % Intialise Slab Array
-Ts= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
+Ts= zeros(slabNumx,slabNumy,2);               % Making empty matrix for slab to store values
 Ts(:,:,:)= initialSlabTemp;                      % Setting initial slab temperature assuming uniform
+
 %--------------------------------------------------------------------------------------------------
 %AirParameters
 InletAtemp=20;                              % Constant inlet air temperature degrees Celcius
 h=17.2;                                     % Convective heat transfer coefficient
-Ta= zeros(nodeNumx,2);               % Making empty matrix for air temperature to store values.
+Ta= zeros(slabNumx,2);               % Making empty matrix for air temperature to store values.
 Ta(1,:)= InletAtemp;                        % Setting air temperature at x=
 Ta(:,1)= initialSlabTemp;                        % Setting air temperature at x=0
 
@@ -58,16 +53,6 @@ CSarea=0.0025;                              % Cross Sectional area to flow
 VolumetricFlowrate=Velocity*CSarea;         % Volumetric flow rate of air
 massAir=VolumetricFlowrate*pAir;                 % Mass Flow rate of air
 
-%--------------------------------------------------------------------------------------------------
-%row is distance where row 1 is at x=0, row 2 x=dx
-%column is time where column 1 is time=0, column 2 is time =dt
-%        Ta(x,t)=Ta(x-1,t)+(Ts(x,t)-Ta(x-1,t))*h*area*dx/(Ma*cpair); % Air temperature profile
-
-% Conduction
-
-count = 0;
-
-dtmin= min((0.5*dx^2)/alpha, (0.5*dy^2)/alpha);
 
 %----------------------------------------------------------------------------------------------
 %PCM Parameters
@@ -78,30 +63,26 @@ Transition_range = 2;
 cp_liquid = 4.18; %KJ/KgK
 cp_solid = 2.04; %KJ/KgK
 cp_transition =	334; % KJ/Kg
+
+kPCMliq = 1.6;
+kPCMsolid=0.6;
+hPCM = 50;
 densitySolid = 900; % Kg/m3
 densityLiquid = 1000; % Kg/m3
-initialPCMTemp = -4;
-kPCMice = 1.6;
-kPCMwater= 0.6;
-
-cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
-H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
-
-liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
-densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
-kPCM= liqFraction*kPCM+(1-liqFraction)*kPCM; 
-
+initialPCMTemp = 2;
+kPCM = 1.6;
+PCMthickness = 0.01; % 1cm
+PCMNumy = 10;
+PCMdy = PCMthickness/PCMNumy; 
+% cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+% H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
+% 
+% liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
+% densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
 
 % Intialise PCM Array
-Tp= zeros(nodeNumx,nodeNumy,2);               % Making empty matrix for slab to store values
+Tp= zeros(slabNumx,slabNumy,2);               % Making empty matrix for slab to store values
 Tp(:,:,:)= initialPCMTemp;                      % Setting initial slab temperature assuming uniform
-
-cpCurrent = PCMcp(Tp,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
-H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
-
-liqFraction = LiquidFraction(H,cp_solid,Transition_temp, cp_transition);
-densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
-
 
 
 
@@ -114,8 +95,8 @@ open(aviobj);
 colormap parula
 for t= 1:(timeSteps-1)                   %Change in Time
     airItr = airItr +1;
-    for y = 1:nodeNumy
-        for x = 1:nodeNumx                         %Change in distance
+    for x = 1:slabNumx                         %Change in distance
+        for y = 1:slabNumy
             %        %Convection
             %        if (airItr >= airSkips)
             %        Ta(x,t+1)=Ta(x,t)+(Ts(x,t)-Ta(x,t))*h*convArea*dx/(massAir*cpAir); % Air temperature profile
@@ -131,9 +112,8 @@ for t= 1:(timeSteps-1)                   %Change in Time
             if(x == 1)
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x+1,y,1)-Ts(x,y,1))/dx)*dt;
-            elseif(x == nodeNumx)
+            elseif(x == slabNumx)
                 % Slab Conduction
-                Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((-Ts(x,y,1)+Ts(x-1,y,1))/dx)*dt;
                 Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((-Ts(x,y,1)+Ts(x-1,y,1))/dx)*dt;
             % Conditions for non edge nodes
             else
@@ -146,14 +126,14 @@ for t= 1:(timeSteps-1)                   %Change in Time
             % Boundry conditions for slab edge adjacent to air
             if(y==1)
                 % Air temperature profile
-                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*convArea*2/(massAir*cpAir*1000); 
+                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*dx*dz*2/(massAir*cpAir*1000); 
                 % Slab Convection
                 Ts(x,y,2)= Ts(x,y,2)-(massAir*cpAir*dt*(Ta(x+1,2)-Ta(x,1)))/(nodeMass*cpSlab);
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y+1,1)-Ts(x,y,1))/dy)*dt;
             % Boundry conditions for slab edge adjacent to PCM
-            elseif(y == nodeNumy)
-                % Slab Conduction
+            elseif(y == slabNumy)
+                % Slab Conduction 
                 Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y-1,1)-Ts(x,y,1))/dy)*dt;
             % Conditions for non edge nodes
             else
@@ -161,11 +141,61 @@ for t= 1:(timeSteps-1)                   %Change in Time
                 Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((Ts(x,y+1,1)-2*Ts(x,y,1)+Ts(x,y-1,1))/(dy^2))*dt;
             end
         end
+        
+        
+        for y = 1:PCMNumy
+            
+            cpPCM = PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+            H = cpPCM*Tp(x,y,1); %Calculating enthalpy at specific node and time
+            liqFraction = LiquidFraction(H,cp_solid,Transition_temp, cp_transition);
+            densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
+            kPCM = liqFraction*kPCMliq + (1-liqFraction)*kPCMsolid;
+            pcmAlpha = kPCM/(densityPCM*cpPCM);
+            massPCM = densityPCM*dx*PCMdy*dz;
+            
+            Stabilitycheckdx= pcmAlpha*dt/dx^2;
+            Stabilitycheckdy= pcmAlpha*dt/PCMdy^2;
+            
+            % -------------------------------------------------------------
+            % Calulating temperature change from heat flow in x direction
+            % Boundry conditions for PCM edges
+            if(x == 1)
+                % PCM Conduction
+                Tp(x,y,2) = Tp(x,y,2) + (pcmAlpha)*((Tp(x+1,y,1)-Tp(x,y,1))/dx)*dt;
+            elseif(x == slabNumx)
+                % Slab Conduction
+                Tp(x,y,2) = Tp(x,y,2)+ (pcmAlpha)*((-Tp(x,y,1)+Tp(x-1,y,1))/dx)*dt;
+            % Conditions for non edge nodes
+            else
+                % Slab Conduction
+                Tp(x,y,2) = Tp(x,y,2)+ (pcmAlpha)*((Tp(x+1,y,1)-2*Tp(x,y,1)+Tp(x-1,y,1))/(dx^2))*dt;
+            end
+            
+            % -------------------------------------------------------------
+            % Calulating temperature change from heat flow in y direction
+            % Boundry conditions for PCM edge adjacent to Slab
+            if(y==1)
+                % PCM/Slab Convection
+                Tp(x,y,2)= Tp(x,y,2)+(Ts(x,y,1)-Tp(x,y,1))*hPCM*dx*dz*2/(massPCM*cpPCM*1000);
+                Ts(x,y,2)= Ts(x,y,2)-(massPCM*cpPCM*dt*(Tp(x,y,2)-Tp(x,y,1)))/(nodeMass*cpSlab);
+
+                % PCM Conduction
+                Tp(x,y,2) = Tp(x,y,2) + (pcmAlpha)*((Tp(x,y+1,1)-Tp(x,y,1))/PCMdy)*dt;
+            % Boundry conditions for slab edge adjacent to PCM
+            elseif(y == PCMNumy)
+                % PCM Conduction
+                Tp(x,y,2) = Tp(x,y,2) + (pcmAlpha)*((Tp(x,y-1,1)-Tp(x,y,1))/PCMdy)*dt;
+            % Conditions for non edge nodes
+            else
+                % PCM Conduction
+                Tp(x,y,2) = Tp(x,y,2)+ (pcmAlpha)*((Tp(x,y+1,1)-2*Tp(x,y,1)+Tp(x,y-1,1))/(PCMdy^2))*dt;
+            end
+        end
     end
     
     % Saving data into a video
     if(mod(t,timeStepSkips)==0)
-        contourf(Ts(:,:,1));
+        contourf(cat(2,Ts(:,:,1),Tp(:,:,1)));
         colorbar()
         caxis([2, 20]);
         drawnow;
