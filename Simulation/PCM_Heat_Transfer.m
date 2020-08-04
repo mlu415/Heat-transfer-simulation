@@ -40,7 +40,7 @@ Ts(:,:,:)= initialSlabTemp;                      % Setting initial slab temperat
 
 %--------------------------------------------------------------------------------------------------
 %AirParameters
-InletAtemp=20;                              % Constant inlet air temperature degrees Celcius
+InletAtemp=5;                              % Constant inlet air temperature degrees Celcius
 h=17.2;                                     % Convective heat transfer coefficient
 Ta= zeros(slabNumx,2);               % Making empty matrix for air temperature to store values.
 Ta(1,:)= InletAtemp;                        % Setting air temperature at x=
@@ -69,7 +69,7 @@ kPCMsolid=0.6;
 hPCM = 50;
 densitySolid = 900; % Kg/m3
 densityLiquid = 1000; % Kg/m3
-initialPCMTemp = -4;
+initialPCMTemp = 4.99999999;
 kPCM = 1.6;
 PCMthickness = 0.01; % 1cm
 PCMNumy = 10;

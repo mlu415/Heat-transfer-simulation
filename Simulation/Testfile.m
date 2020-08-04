@@ -105,7 +105,7 @@ densityLiquid = 1000; % Kg/m3
 initialPCMTemp = -4;
 kPCM = 1.6;
 
-cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+cpCurrent = PCMcp(Tp,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
 H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
 
 liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
