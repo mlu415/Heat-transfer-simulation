@@ -3,6 +3,7 @@ clear
 %--------------------------------------------------------------------------------------------------
 % Simulation parameters
 
+
 slabNumx = 10;                               % Number of nodes to break bar into
 slabNumy = 10;
 
@@ -27,7 +28,7 @@ initialSlabTemp=-4;                          % Initial Slab temperature
 %-----------------------------------------------------------------------------------------------------
 %Recording and Simulation
 
-simTime=10*60;                                 % Max simulation time
+simTime=2*60;                                 % Max simulation time
 dt = min(0.5*dx^2/alpha, 0.5*dy^2/alpha)/10;
 timeSteps = round(simTime/dt);                            % Number of Time steps
 fps = 10;
@@ -55,7 +56,6 @@ massAir=VolumetricFlowrate*pAir;                 % Mass Flow rate of air
 
 %----------------------------------------------------------------------------------------------
 %PCM Parameters
-AvgPCMtemp = zeros(timeSteps,1);
 % water parameters
 Transition_temp = 0;
 Transition_range = 2;
@@ -73,10 +73,10 @@ initialPCMTemp = -4;
 kPCM = 1.6;
 PCMthickness = 0.01; % 1cm
 PCMNumy = 10;
-PCMdy = PCMthickness/PCMNumy;
+PCMdy = PCMthickness/PCMNumy; 
 % cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
 % H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
-%
+% 
 % liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
 % densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
 
@@ -84,7 +84,7 @@ PCMdy = PCMthickness/PCMNumy;
 Tp= zeros(slabNumx,slabNumy,2);               % Making empty matrix for slab to store values
 Tp(:,:,:)= initialPCMTemp;                      % Setting initial slab temperature assuming uniform
 
-massPCM = dy*PCMdy*dz*1000;
+
 
 
 airSkips = (dx/dt)/Velocity;
@@ -94,9 +94,6 @@ aviobj.FrameRate = fps;
 open(aviobj);
 colormap parula
 for t= 1:(timeSteps-1)                   %Change in Time
-    Ts(:,:,1)= Ts(:,:,2);
-    Ta(:,1) = Ta(:,2);
-    Tp(:,:,1)= Tp(:,:,2);
     airItr = airItr +1;
     for x = 1:slabNumx                         %Change in distance
         for y = 1:slabNumy
@@ -106,7 +103,9 @@ for t= 1:(timeSteps-1)                   %Change in Time
             %        else
             
             % Setting up next time step
-            
+            Ts(:,:,1)= Ts(:,:,2);
+            Ta(:,1) = Ta(:,2);
+            Tp(:,:,1)= Tp(:,:,2);
             % -------------------------------------------------------------
             % Calulating temperature change from heat flow in x direction
             % Boundry conditions for slab edges
@@ -116,7 +115,7 @@ for t= 1:(timeSteps-1)                   %Change in Time
             elseif(x == slabNumx)
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((-Ts(x,y,1)+Ts(x-1,y,1))/dx)*dt;
-                % Conditions for non edge nodes
+            % Conditions for non edge nodes
             else
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((Ts(x+1,y,1)-2*Ts(x,y,1)+Ts(x-1,y,1))/(dx^2))*dt;
@@ -127,16 +126,16 @@ for t= 1:(timeSteps-1)                   %Change in Time
             % Boundry conditions for slab edge adjacent to air
             if(y==1)
                 % Air temperature profile
-                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*dx*dz*2/(massAir*cpAir*1000);
+                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*dx*dz*2/(massAir*cpAir*1000); 
                 % Slab Convection
                 Ts(x,y,2)= Ts(x,y,2)-(massAir*cpAir*dt*(Ta(x+1,2)-Ta(x,1)))/(nodeMass*cpSlab);
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y+1,1)-Ts(x,y,1))/dy)*dt;
-                % Boundry conditions for slab edge adjacent to PCM
+            % Boundry conditions for slab edge adjacent to PCM
             elseif(y == slabNumy)
-                % Slab Conduction
+                % Slab Conduction 
                 Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y-1,1)-Ts(x,y,1))/dy)*dt;
-                % Conditions for non edge nodes
+            % Conditions for non edge nodes
             else
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((Ts(x,y+1,1)-2*Ts(x,y,1)+Ts(x,y-1,1))/(dy^2))*dt;
@@ -147,7 +146,6 @@ for t= 1:(timeSteps-1)                   %Change in Time
         for y = 1:PCMNumy
             
             cpPCM = PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
-            
             H = cpPCM*Tp(x,y,1); %Calculating enthalpy at specific node and time
             liqFraction = LiquidFraction(H,cp_solid,Transition_temp, cp_transition);
             densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
@@ -167,7 +165,7 @@ for t= 1:(timeSteps-1)                   %Change in Time
             elseif(x == slabNumx)
                 % Slab Conduction
                 Tp(x,y,2) = Tp(x,y,2)+ (pcmAlpha)*((-Tp(x,y,1)+Tp(x-1,y,1))/dx)*dt;
-                % Conditions for non edge nodes
+            % Conditions for non edge nodes
             else
                 % Slab Conduction
                 Tp(x,y,2) = Tp(x,y,2)+ (pcmAlpha)*((Tp(x+1,y,1)-2*Tp(x,y,1)+Tp(x-1,y,1))/(dx^2))*dt;
@@ -180,14 +178,14 @@ for t= 1:(timeSteps-1)                   %Change in Time
                 % PCM/Slab Convection Boundary Conditions
                 Tp(x,y,2)= Tp(x,y,2)+(Ts(x,slabNumy,1)-Tp(x,y,1))*hPCM*dx*dz*2/(massPCM*cpPCM*1000);
                 Ts(x,slabNumy,2)= Ts(x,y,2)-(massPCM*cpPCM*dt*(Tp(x,y,2)-Tp(x,y,1)))/(nodeMass*cpSlab);
-                
+
                 % PCM Conduction
                 Tp(x,y,2) = Tp(x,y,2) + (pcmAlpha)*((Tp(x,y+1,1)-Tp(x,y,1))/PCMdy)*dt;
-                % Boundry conditions for slab edge adjacent to PCM
+            % Boundry conditions for slab edge adjacent to PCM
             elseif(y == PCMNumy)
                 % PCM Conduction
                 Tp(x,y,2) = Tp(x,y,2) + (pcmAlpha)*((Tp(x,y-1,1)-Tp(x,y,1))/PCMdy)*dt;
-                % Conditions for non edge nodes
+            % Conditions for non edge nodes
             else
                 % PCM Conduction
                 Tp(x,y,2) = Tp(x,y,2)+ (pcmAlpha)*((Tp(x,y+1,1)-2*Tp(x,y,1)+Tp(x,y-1,1))/(PCMdy^2))*dt;
@@ -196,23 +194,17 @@ for t= 1:(timeSteps-1)                   %Change in Time
     end
     
     % Saving data into a video
-        if(mod(t,timeStepSkips)==0)
-            contourf(flipud(cat(2,Ts(:,:,1),Tp(:,:,1)).'));
-            colorbar()
-            caxis([-5, 20]);
-            drawnow;
-            F = getframe(gcf);
-            writeVideo(aviobj,F);
-            disp(100*t/timeSteps);
-        end
-        AvgPCMtemp(t) = mean(Tp(:,:,1), "all");
-%         AvgPCMtemp(t) = Tp(10,10,1);
+    if(mod(t,timeStepSkips)==0)
+        contourf(cat(2,Ts(:,:,1),Tp(:,:,1)));
+        colorbar()
+        caxis([-5, 20]);
+        drawnow;
+        F = getframe(gcf);
+        writeVideo(aviobj,F);
+        disp(100*t/timeSteps);
+    end
 end
 
-figure
-plot((1:(timeSteps-1))*dt/60, AvgPCMtemp(1:end-1));
-xlabel('Time (Mins)');
-ylabel('Temperature (C)')
 
 close(aviobj);
 
