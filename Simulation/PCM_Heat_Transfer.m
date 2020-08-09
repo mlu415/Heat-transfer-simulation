@@ -209,7 +209,10 @@ for t= 1:(timeSteps-1)                   %Change in Time
 %         AvgPCMtemp(t) = Tp(10,10,1);
 end
 
-plot(1:(timeSteps-1), AvgPCMtemp(1:end-1));
+figure
+plot((1:(timeSteps-1))*dt/60, AvgPCMtemp(1:end-1));
+xlabel('Time (Mins)');
+ylabel('Temperature (C)')
 
 close(aviobj);
 
