@@ -10,19 +10,19 @@ slabNumy = 10;
 %SlabParameters
 % Slab Diementions
 L = 0.43;                                   % Length of slab
-Thick = 0.01;
+Thicc = 0.01;
 dx = L/slabNumx;                            % length of each node
-dy = Thick/slabNumy;                        % Thickness of slab node
+dy = Thicc/slabNumy;                        % Thickness of slab node
 dz = 0.28;                                  % Width of slab node
 nodeVol = dx*dy*dz;                         % Node volume
 
 % Slab parameters
-densitySlab=913;                           % Density of slab
-kSlab=0.15;                                  % Slab conductivity
-cpSlab = 1.67;                               % Specific heat capacity kj/kgK
+densitySlab=2700;                           % Density of slab
+kSlab=0.205;                                  % Slab conductivity
+cpSlab = 0.9;                               % Specific heat capacity kj/kgK
 nodeMass = nodeVol*densitySlab;             % Node Mass
 alpha=kSlab/(densitySlab*cpSlab);           % Thermal Diffusivity
-initialSlabTemp=10;                          % Initial Slab temperature
+initialSlabTemp=-4;                          % Initial Slab temperature
 
 %-----------------------------------------------------------------------------------------------------
 %Recording and Simulation
@@ -39,18 +39,19 @@ Ts(:,:,:)= initialSlabTemp;                      % Setting initial slab temperat
 
 %--------------------------------------------------------------------------------------------------
 %AirParameters
-InletAtemp=-15;                              % Constant inlet air temperature degrees Celcius
-h=17.2;                                     % Convective heat transfer coefficient 10622.6
+InletAtemp=20;                              % Constant inlet air temperature degrees Celcius
+h=17.2;                                     % Convective heat transfer coefficient
 Ta= zeros(slabNumx,2);               % Making empty matrix for air temperature to store values.
 Ta(1,:)= InletAtemp;                        % Setting air temperature at x=
 Ta(:,1)= initialSlabTemp;                        % Setting air temperature at x=0
 
-cpAir=1.005;                                % Specific Heat capacity of air 3.72
-pAir=1.205;                                 % Density of air 1045
+cpAir=1.005;                                % Specific Heat capacity of air
+pAir=1.205;                                 % Density of air
 Velocity=2;                                 % Velocity of air
 CSarea=0.0025;                              % Cross Sectional area to flow
 VolumetricFlowrate=Velocity*CSarea;         % Volumetric flow rate of air
 massAir=VolumetricFlowrate*pAir;                 % Mass Flow rate of air
+
 
 %----------------------------------------------------------------------------------------------
 %PCM Parameters
@@ -69,7 +70,7 @@ kPCMsolid=0.6;
 hPCM = 50;
 densitySolid = 900; % Kg/m3
 densityLiquid = 1000; % Kg/m3
-initialPCMTemp = 10;
+initialPCMTemp = -4;
 kPCM = 1.6;
 PCMthickness = 0.01; % 1cm
 PCMNumy = 10;
@@ -86,6 +87,7 @@ Tp(:,:,:)= initialPCMTemp;                      % Setting initial slab temperatu
 
 massPCM = dy*PCMdy*dz*1000;
 
+
 airSkips = (dx/dt)/Velocity;
 airItr = 0;
 aviobj = VideoWriter('example.avi');
@@ -101,6 +103,7 @@ for t= 1:(timeSteps-1)                   %Change in Time
         for y = 1:PCMNumy
             
             cpPCM = PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+            
             H = cpPCM*Tp(x,y,1); %Calculating enthalpy at specific node and time
             liqFraction = LiquidFraction(H,cp_solid,Transition_temp, cp_transition);
             densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
@@ -120,7 +123,7 @@ for t= 1:(timeSteps-1)                   %Change in Time
                 % PCM Conduction
                 Tp(x,y,2) = Tp(x,y,2) + (pcmAlpha)*((Tp(x+1,y,1)-Tp(x,y,1))/dx)*dt;
             elseif(x == slabNumx)
-                % PCM Conduction
+                % Slab Conduction
                 Tp(x,y,2) = Tp(x,y,2)+ (pcmAlpha)*((-Tp(x,y,1)+Tp(x-1,y,1))/dx)*dt;
                 % Conditions for non edge nodes
             else
@@ -150,6 +153,10 @@ for t= 1:(timeSteps-1)                   %Change in Time
         end
         
         for y = 1:slabNumy
+            %        %Convection
+            %        if (airItr >= airSkips)
+            %        Ta(x,t+1)=Ta(x,t)+(Ts(x,t)-Ta(x,t))*h*convArea*dx/(massAir*cpAir); % Air temperature profile
+            %        else
             
             % Setting up next time step
             
@@ -204,7 +211,7 @@ for t= 1:(timeSteps-1)                   %Change in Time
             disp(100*t/timeSteps);
         end
         AvgPCMtemp(t) = mean(Tp(:,:,1), "all");
-        PointPCMtemp(t) = Tp(10,10,1);
+        PointPCMtemp(t) = Tp(10,2,1);
 end
 
 figure
