@@ -1,0 +1,13 @@
+function Nu=Nusselts(density,viscosity, k, cp, w, gap,length, velocitySlab)
+         global densitya Viscositya ka Cpa L
+         dH=(2*w*g)/(w+g);                     % Hydraulic diameter of the rectangular duct
+         Re=(velocitySlab*dH)/Viscositya;                % Reynolds number of the air
+         Pr=(Cpa*Viscositya*densitya*1000)/ka;      % Prandtl number of the air
+         
+         if (Re < 2300) && (w/g > 8)
+             Nu=7.541+(0.03*(dH/length)*Re*Pr)/(1+0.016*((dH/L)*Re*Pr).^(2/3));        % Nusselt number
+         elseif (Re >= 2300) && (Re < 10e6) 
+             f=(0.76*log(Re)-1.64)^(-2);
+             Nu=((f/8)*(Re-1000)*Pr)/(1+12.7*(f/8)^0.5*(Pr^(2/3)-1));
+         end
+

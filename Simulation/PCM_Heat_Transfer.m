@@ -8,9 +8,9 @@ slabNumy = 10;
 
 %--------------------------------------------------------------------------------------------------
 %SlabParameters
-% Slab Diementions
-L = 0.43;                                   % Length of slab
-Thick = 0.01;
+% Slab Dimensions
+L = 0.43;                                   % Length of slab m
+Thick = 0.015;
 dx = L/slabNumx;                            % length of each node
 dy = Thick/slabNumy;                        % Thickness of slab node
 dz = 0.28;                                  % Width of slab node
@@ -18,19 +18,19 @@ nodeVol = dx*dy*dz;                         % Node volume
 
 % Slab parameters
 densitySlab=913;                           % Density of slab
-kSlab=0.15;                                  % Slab conductivity
+kSlab=0.3;                                  % Slab conductivity
 cpSlab = 1.67;                               % Specific heat capacity kj/kgK
 nodeMass = nodeVol*densitySlab;             % Node Mass
 alpha=kSlab/(densitySlab*cpSlab);           % Thermal Diffusivity
-initialSlabTemp=10;                          % Initial Slab temperature
+initialSlabTemp=-10;                          % Initial Slab temperature
 
 %-----------------------------------------------------------------------------------------------------
 %Recording and Simulation
 
-simTime=10*60;                                 % Max simulation time
+simTime=30*60;                                 % Max simulation time
 dt = min(0.5*dx^2/alpha, 0.5*dy^2/alpha)/10;
 timeSteps = round(simTime/dt);                            % Number of Time steps
-fps = 10;
+fps = 0.1;
 timeStepSkips = round((timeSteps/simTime)/fps);
 
 % Intialise Slab Array
@@ -38,19 +38,19 @@ Ts= zeros(slabNumx,slabNumy,2);               % Making empty matrix for slab to 
 Ts(:,:,:)= initialSlabTemp;                      % Setting initial slab temperature assuming uniform
 
 %--------------------------------------------------------------------------------------------------
-%AirParameters
-InletAtemp=-15;                              % Constant inlet air temperature degrees Celcius
-h=17.2;                                     % Convective heat transfer coefficient 10622.6
+%HTFParameters
+InletHTFtemp=5;                              % Constant inlet air temperature degrees Celcius
+h=10600;                                     % Convective heat transfer coefficient 10622.6
 Ta= zeros(slabNumx,2);               % Making empty matrix for air temperature to store values.
-Ta(1,:)= InletAtemp;                        % Setting air temperature at x=
+Ta(1,:)= InletHTFtemp;                        % Setting air temperature at x=
 Ta(:,1)= initialSlabTemp;                        % Setting air temperature at x=0
 
-cpAir=1.005;                                % Specific Heat capacity of air 3.72
-pAir=1.205;                                 % Density of air 1045
-Velocity=2;                                 % Velocity of air
+cpHTF=3.72;                                % Specific Heat capacity of air 3.72
+pHTF=1060;                                 % Density of air 1045
+Velocity=0.04;                                 % Velocity of air
 CSarea=0.0025;                              % Cross Sectional area to flow
 VolumetricFlowrate=Velocity*CSarea;         % Volumetric flow rate of air
-massAir=VolumetricFlowrate*pAir;                 % Mass Flow rate of air
+massAir=VolumetricFlowrate*pHTF;                 % Mass Flow rate of air
 
 %----------------------------------------------------------------------------------------------
 %PCM Parameters
@@ -64,27 +64,19 @@ cp_liquid = 4.18; %KJ/KgK
 cp_solid = 2.04; %KJ/KgK
 cp_transition =	334; % KJ/Kg
 
-kPCMliq = 1.6;
+kPCMliq = 0.6;
 kPCMsolid=0.6;
 hPCM = 50;
 densitySolid = 900; % Kg/m3
 densityLiquid = 1000; % Kg/m3
-initialPCMTemp = 10;
-kPCM = 1.6;
-PCMthickness = 0.01; % 1cm
+initialPCMTemp = -10;
+PCMthickness = 0.02; % 1cm
 PCMNumy = 10;
 PCMdy = PCMthickness/PCMNumy;
-% cpCurrent = PCMcp(T,Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
-% H = cpCurrent*Tp; %Calculating enthalpy at specific node and time
-%
-% liqFraction = LiquidFraction(H,cp_solid,Transition_temp, q);
-% densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
 
 % Intialise PCM Array
-Tp= zeros(slabNumx,slabNumy,2);               % Making empty matrix for slab to store values
+Tp= zeros(slabNumx,PCMNumy,2);               % Making empty matrix for slab to store values
 Tp(:,:,:)= initialPCMTemp;                      % Setting initial slab temperature assuming uniform
-
-massPCM = dy*PCMdy*dz*1000;
 
 airSkips = (dx/dt)/Velocity;
 airItr = 0;
@@ -97,11 +89,12 @@ for t= 1:(timeSteps-1)                   %Change in Time
     Ta(:,1) = Ta(:,2);
     Tp(:,:,1)= Tp(:,:,2);
     airItr = airItr +1;
+    Ta(1,1) = InletHTFtemp;
     for x = 1:slabNumx                         %Change in distance
         for y = 1:PCMNumy
             
             cpPCM = PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
-            H = cpPCM*Tp(x,y,1); %Calculating enthalpy at specific node and time
+            H = PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition)*Tp(x,y,1); %Calculating enthalpy at specific node and time
             liqFraction = LiquidFraction(H,cp_solid,Transition_temp, cp_transition);
             densityPCM = liqFraction*densityLiquid + (1-liqFraction)*densitySolid;
             kPCM = liqFraction*kPCMliq + (1-liqFraction)*kPCMsolid;
@@ -173,9 +166,9 @@ for t= 1:(timeSteps-1)                   %Change in Time
             % Boundry conditions for slab edge adjacent to air
             if(y==1)
                 % Air temperature profile
-                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*dx*dz*2/(massAir*cpAir*1000);
+                Ta(x+1,2)=Ta(x,1)+(Ts(x,y,1)-Ta(x,1))*h*dx*dz*2/(massAir*cpHTF*1000);
                 % Slab Convection
-                Ts(x,y,2)= Ts(x,y,2)-(massAir*cpAir*dt*(Ta(x+1,2)-Ta(x,1)))/(nodeMass*cpSlab);
+                Ts(x,y,2)= Ts(x,y,2)-(massAir*cpHTF*dt*(Ta(x+1,2)-Ta(x,1)))/(nodeMass*cpSlab);
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2) + (alpha)*((Ts(x,y+1,1)-Ts(x,y,1))/dy)*dt;
                 % Boundry conditions for slab edge adjacent to PCM
@@ -187,32 +180,36 @@ for t= 1:(timeSteps-1)                   %Change in Time
                 % Slab Conduction
                 Ts(x,y,2) = Ts(x,y,2)+ (alpha)*((Ts(x,y+1,1)-2*Ts(x,y,1)+Ts(x,y-1,1))/(dy^2))*dt;
             end
-        end
+        Hnew = Tp(x,y,1)*PCMcp(Tp(x,y,2),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+        %testyboi = PCMcp(Tp(x,y,2),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition)-PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition)
         
+%           Hdiff = (Tp(x,y,2)-Tp(x,y,1))*(PCMcp(Tp(x,y,2),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition)-PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition));
+%           Tp(x,y,2) = Tp(x,y,2) - 1*Hdiff/PCMcp(Tp(x,y,1),Transition_temp,Transition_range,cp_liquid,cp_solid,cp_transition);
+        end
         
         
     end
     
     % Saving data into a video
         if(mod(t,timeStepSkips)==0)
-%             contourf(flipud(cat(2,Ts(:,:,1),Tp(:,:,1)).'));
-%             colorbar()
-%             caxis([-5, 20]);
-%             drawnow;
-%             F = getframe(gcf);
-%             writeVideo(aviobj,F);
+            contourf(flipud(cat(2,Ts(:,:,1),Tp(:,:,1)).'));
+            colorbar()
+            caxis([-5, 20]);
+            drawnow;
+            F = getframe(gcf);
+            writeVideo(aviobj,F);
             disp(100*t/timeSteps);
         end
         AvgPCMtemp(t) = mean(Tp(:,:,1), "all");
         PointPCMtemp(t) = Tp(10,10,1);
 end
 
-figure
-hold on
-plot((1:(timeSteps-1))*dt/60, AvgPCMtemp(1:end-1));
-plot((1:(timeSteps-1))*dt/60, PointPCMtemp(1:end-1));
-xlabel('Time (Mins)');
-ylabel('Temperature (C)')
+% figure
+% hold on
+% plot((1:(timeSteps-1))*dt/60, AvgPCMtemp(1:end-1));
+% plot((1:(timeSteps-1))*dt/60, PointPCMtemp(1:end-1));
+% xlabel('Time (Mins)');
+% ylabel('Temperature (C)')
 
 close(aviobj);
 

@@ -60,7 +60,7 @@ end
 %-----------------------------------------------------------------------------------------------------
 %Recording and Simulation
 
-simTime=10*60;                                 % Max simulation time
+simTime=0.1*60;                                 % Max simulation time
 dt = min(0.5*dx^2/alpha, 0.5*dy^2/alpha)/10;
 timeSteps = round(simTime/dt);                            % Number of Time steps
 fps = 100;
@@ -204,27 +204,27 @@ for t= 1:(timeSteps-1)                   %Change in Time
     
     % Saving data into a video
     if(mod(t,timeStepSkips)==0)
-%                     hold on
-%                     contourf(flipud(Tp(:,:,1).'));
-%                     colorbar()
-%                     caxis([-100, 20]);
-%                     drawnow;
-%                     F = getframe(gcf);
-%                     writeVideo(aviobj,F);
-%         disp(100*t/timeSteps);
-%         hold off
+                    hold on
+                    contourf(flipud(Tp(:,:,1).'));
+                    colorbar()
+                    caxis([-100, 20]);
+                    drawnow;
+                    F = getframe(gcf);
+                    writeVideo(aviobj,F);
+        disp(100*t/timeSteps);
+        hold off
     end
     AvgPCMtemp(t) = mean(Tp(:,:,1), "all");
     PointPCMtemp(t) = Tp(10,2,1);
 end
 
-figure
-hold on
-plot((1:(timeSteps-1))*dt/60, AvgPCMtemp(1:end-1));
-plot((1:(timeSteps-1))*dt/60, PointPCMtemp(1:end-1));
-xlabel('Time (Mins)');
-ylabel('Temperature (C)')
-hold off
+% figure
+% hold on
+% plot((1:(timeSteps-1))*dt/60, AvgPCMtemp(1:end-1));
+% plot((1:(timeSteps-1))*dt/60, PointPCMtemp(1:end-1));
+% xlabel('Time (Mins)');
+% ylabel('Temperature (C)')
+% hold off
 close(aviobj);
 
 disp("Done");
